@@ -1,0 +1,23 @@
+{
+  "name": "todomvc-relay-go",
+  "private": true,
+  "description": "React/Relay TodoMVC app, driven by a Golang GraphQL backend",
+  "repository": "github.com/sogko/todomvc-relay-go",
+  "version": "0.1.0",
+  "scripts": {
+    "start": "go run graphql.go & babel-node ./server.js",
+    "update-schema": "cd ./scripts && go run updateSchema.go"
+  },
+  "dependencies": {
+    "babel": "5.8.21",
+    "babel-loader": "5.3.2",
+    "babel-relay-plugin": "0.2.3",
+    "classnames": "^2.1.3",
+    "express": "^4.13.1",
+    "react": "^0.14.0-rc",
+    "react-dom": "^0.14.0-rc",
+    "react-relay": "^0.3.1",
+    "webpack": "^1.10.5",
+    "webpack-dev-server": "^1.10.1"
+  }
+}
