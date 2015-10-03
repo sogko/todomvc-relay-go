@@ -1,53 +1,142 @@
 package data
 
+import "fmt"
+
+// Mock authenticated ID
+const ViewerId = "me"
+
 // Model structs
-type User struct {
-	Id string `json:"id"`
-	Name string `json:"name"`
-	Widgets []*Widget `json:"widgets"`
+type Todo struct {
+	Id       string `json:"id"`
+	Text     string `json:"text"`
+	Complete bool   `json:"complete"`
 }
 
-type Widget struct {
+type User struct {
 	Id string `json:"id"`
-	Name string `json:"name"`
 }
 
 // Mock data
-var viewer = &User{
-	Id: "1",
-	Name: "Anonymous",
+var viewer = &User{ViewerId}
+var usersById = map[string]*User{
+	ViewerId: viewer,
 }
-var widgets = []*Widget{
-	&Widget{"0", "What's-it"},
-	&Widget{"1", "Who's-it"},
-	&Widget{"2", "How's-it"},
+var todosById = map[string]*Todo{}
+var todoIdsByUser = map[string][]string{
+	ViewerId: []string{},
+}
+var nextTodoId = 0
+
+// Data methods
+
+func AddTodo(text string, complete bool) string {
+	todo := &Todo{
+		Id:       fmt.Sprintf("%v", nextTodoId),
+		Text:     text,
+		Complete: complete,
+	}
+	nextTodoId = nextTodoId + 1
+
+	todosById[todo.Id] = todo
+	todoIdsByUser[ViewerId] = append(todoIdsByUser[ViewerId], todo.Id)
+
+	return todo.Id
 }
 
-// Data accessors
-func GetUser(id string) *User {
-	if id == viewer.Id {
-		return viewer
+func GetTodo(id string) *Todo {
+	if todo, ok := todosById[id]; ok {
+		return todo
 	}
 	return nil
 }
-func GetViewer() *User {
-	return viewer
-}
-func GetWidget(id string) *Widget {
-	for _, widget := range widgets {
-		if widget.Id == id {
-			return widget
+
+func GetTodos(status string) []*Todo {
+	todos := []*Todo{}
+	for _, todoId := range todoIdsByUser[ViewerId] {
+		if todo := GetTodo(todoId); todo != nil {
+
+			switch status {
+			case "completed":
+				if todo.Complete {
+					todos = append(todos, todo)
+				}
+			case "incomplete":
+				if !todo.Complete {
+					todos = append(todos, todo)
+				}
+			case "any":
+				fallthrough
+			default:
+				todos = append(todos, todo)
+			}
 		}
 	}
+	return todos
+}
+
+func GetUser(id string) *User {
+	if user, ok := usersById[id]; ok {
+		return user
+	}
 	return nil
 }
-func GetWidgets() []*Widget {
-	return widgets
+
+func GetViewer() *User {
+	return GetUser(ViewerId)
 }
-func WidgetsToInterfaceSlice(widgets ... *Widget) []interface{} {
-	var interfaceSlice []interface{} = make([]interface{}, len(widgets))
-	for i, d := range widgets {
-		interfaceSlice[i] = d
+
+func ChangeTodoStatus(id string, complete bool) {
+	todo := GetTodo(id)
+	if todo == nil {
+		return
 	}
-	return interfaceSlice
+	todo.Complete = complete
+}
+
+func MarkAllTodos(complete bool) []string {
+	changedTodoIds := []string{}
+	for _, todo := range GetTodos("any") {
+		if todo.Complete != complete {
+			todo.Complete = complete
+			changedTodoIds = append(changedTodoIds, todo.Id)
+		}
+	}
+	return changedTodoIds
+}
+
+func RemoveTodo(id string) {
+
+	updatedTodoIdsForUser := []string{}
+	for _, todoId := range todoIdsByUser[ViewerId] {
+		if todoId != id {
+			updatedTodoIdsForUser = append(updatedTodoIdsForUser, todoId)
+		}
+	}
+	todoIdsByUser[ViewerId] = updatedTodoIdsForUser
+	delete(todosById, id)
+
+}
+
+func RemoveCompletedTodos() []string {
+	todosIdRemoved := []string{}
+	for _, completedTodo := range GetTodos("completed") {
+		RemoveTodo(completedTodo.Id)
+		todosIdRemoved = append(todosIdRemoved, completedTodo.Id)
+	}
+	return todosIdRemoved
+}
+
+func RenameTodo(id string, text string) {
+	todo := GetTodo(id)
+	if todo != nil {
+		todo.Text = text
+	}
+}
+
+func TodosToSliceInterface(todos []*Todo) []interface{} {
+	todosIFace := []interface{}{}
+	for _, todo := range todos {
+		todosIFace = append(todosIFace, todo)
+	}
+	return todosIFace
 }
