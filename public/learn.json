@@ -33,6 +33,9 @@
         "name": "graphql-go",
         "url": "https://github.com/chris-ramon/graphql-go"
       }, {
+        "name": "graphql-go-handler",
+        "url": "https://github.com/sogko/graphql-go-handler"
+      }, {
         "name": "graphql-relay-go",
         "url": "https://github.com/sogko/graphql-relay-go"
       }]

@@ -4,6 +4,7 @@ Port of the [React/Relay TodoMVC app](https://github.com/facebook/relay/tree/mas
 ## Parts and pieces
 - [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit)
 - [graphql-go](https://github.com/chris-ramon/graphql-go)
+- [graphql-go-handler](https://github.com/sogko/graphql-go-handler)
 - [graphql-relay-go](https://github.com/sogko/graphql-relay-go)
 
 ### Notes:
