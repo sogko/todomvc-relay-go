@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sogko/graphql-go-handler"
+	"github.com/graphql-go/handler"
 	"github.com/sogko/todomvc-relay-go/data"
 	"log"
 	"net/http"
@@ -10,7 +10,7 @@ import (
 func main() {
 
 	// simplest relay-compliant graphql server HTTP handler
-	h := gqlhandler.New(&gqlhandler.Config{
+	h := handler.New(&handler.Config{
 		Schema: &data.Schema,
 		Pretty: true,
 	})

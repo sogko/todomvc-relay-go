@@ -7,13 +7,13 @@ const ViewerId = "me"
 
 // Model structs
 type Todo struct {
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Text     string `json:"text"`
 	Complete bool   `json:"complete"`
 }
 
 type User struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 }
 
 // Mock data
@@ -31,16 +31,16 @@ var nextTodoId = 0
 
 func AddTodo(text string, complete bool) string {
 	todo := &Todo{
-		Id:       fmt.Sprintf("%v", nextTodoId),
+		ID:       fmt.Sprintf("%v", nextTodoId),
 		Text:     text,
 		Complete: complete,
 	}
 	nextTodoId = nextTodoId + 1
 
-	todosById[todo.Id] = todo
-	todoIdsByUser[ViewerId] = append(todoIdsByUser[ViewerId], todo.Id)
+	todosById[todo.ID] = todo
+	todoIdsByUser[ViewerId] = append(todoIdsByUser[ViewerId], todo.ID)
 
-	return todo.Id
+	return todo.ID
 }
 
 func GetTodo(id string) *Todo {
@@ -98,7 +98,7 @@ func MarkAllTodos(complete bool) []string {
 	for _, todo := range GetTodos("any") {
 		if todo.Complete != complete {
 			todo.Complete = complete
-			changedTodoIds = append(changedTodoIds, todo.Id)
+			changedTodoIds = append(changedTodoIds, todo.ID)
 		}
 	}
 	return changedTodoIds
@@ -120,8 +120,8 @@ func RemoveTodo(id string) {
 func RemoveCompletedTodos() []string {
 	todosIdRemoved := []string{}
 	for _, completedTodo := range GetTodos("completed") {
-		RemoveTodo(completedTodo.Id)
-		todosIdRemoved = append(todosIdRemoved, completedTodo.Id)
+		RemoveTodo(completedTodo.ID)
+		todosIdRemoved = append(todosIdRemoved, completedTodo.ID)
 	}
 	return todosIdRemoved
 }
