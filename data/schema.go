@@ -2,6 +2,7 @@ package data
 
 import (
 	"github.com/graphql-go/graphql"
+	"golang.org/x/net/context"
 	"github.com/graphql-go/relay"
 )
 
@@ -16,18 +17,18 @@ var Schema graphql.Schema
 func init() {
 
 	nodeDefinitions = relay.NewNodeDefinitions(relay.NodeDefinitionsConfig{
-		IDFetcher: func(id string, info graphql.ResolveInfo) interface{} {
+		IDFetcher: func(id string, info graphql.ResolveInfo, ct context.Context) (interface{}, error) {
 			resolvedID := relay.FromGlobalID(id)
 			if resolvedID.Type == "Todo" {
-				return GetTodo(resolvedID.ID)
+				return GetTodo(resolvedID.ID), nil
 			}
 			if resolvedID.Type == "User" {
-				return GetUser(resolvedID.ID)
+				return GetUser(resolvedID.ID), nil
 			}
-			return nil
+			return nil, nil
 		},
-		TypeResolve: func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-			switch value.(type) {
+		TypeResolve: func(p graphql.ResolveTypeParams) *graphql.Object {
+			switch p.Value.(type) {
 			case *Todo:
 				return todoType
 			case *User:
@@ -69,23 +70,23 @@ func init() {
 						DefaultValue: "any",
 					},
 				}),
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					status, _ := p.Args["status"].(string)
 					args := relay.NewConnectionArguments(p.Args)
 					todos := TodosToSliceInterface(GetTodos(status))
-					return relay.ConnectionFromArray(todos, args)
+					return relay.ConnectionFromArray(todos, args), nil
 				},
 			},
 			"totalCount": &graphql.Field{
 				Type: graphql.Int,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return len(GetTodos("any"))
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return len(GetTodos("any")), nil
 				},
 			},
 			"completedCount": &graphql.Field{
 				Type: graphql.Int,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return len(GetTodos("completed"))
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return len(GetTodos("completed")), nil
 				},
 			},
 		},
@@ -97,8 +98,8 @@ func init() {
 		Fields: graphql.Fields{
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 			"node": nodeDefinitions.NodeField,
@@ -115,29 +116,29 @@ func init() {
 		OutputFields: graphql.Fields{
 			"todoEdge": &graphql.Field{
 				Type: todosConnection.EdgeType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					payload, _ := p.Source.(map[string]interface{})
 					todoId, _ := payload["todoId"].(string)
 					todo := GetTodo(todoId)
 					return relay.EdgeType{
 						Node:   todo,
 						Cursor: relay.CursorForObjectInConnection(TodosToSliceInterface(GetTodos("any")), todo),
-					}
+					}, nil
 				},
 			},
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 		},
-		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo) map[string]interface{} {
+		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo, ctx context.Context) (map[string]interface{}, error) {
 			text, _ := inputMap["text"].(string)
 			todoId := AddTodo(text, false)
 			return map[string]interface{}{
 				"todoId": todoId,
-			}
+			}, nil
 		},
 	})
 
@@ -154,28 +155,28 @@ func init() {
 		OutputFields: graphql.Fields{
 			"todo": &graphql.Field{
 				Type: todoType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					payload, _ := p.Source.(map[string]interface{})
 					todoId, _ := payload["todoId"].(string)
 					todo := GetTodo(todoId)
-					return todo
+					return todo, nil
 				},
 			},
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 		},
-		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo) map[string]interface{} {
+		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo, ctx context.Context) (map[string]interface{}, error) {
 			id, _ := inputMap["id"].(string)
 			complete, _ := inputMap["complete"].(bool)
 			resolvedId := relay.FromGlobalID(id)
 			ChangeTodoStatus(resolvedId.ID, complete)
 			return map[string]interface{}{
 				"todoId": resolvedId.ID,
-			}
+			}, nil
 		},
 	})
 
@@ -189,7 +190,7 @@ func init() {
 		OutputFields: graphql.Fields{
 			"changedTodos": &graphql.Field{
 				Type: graphql.NewList(todoType),
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					payload, _ := p.Source.(map[string]interface{})
 					todoIds, _ := payload["todoIds"].([]string)
 					todos := []*Todo{}
@@ -199,22 +200,22 @@ func init() {
 							todos = append(todos, todo)
 						}
 					}
-					return todos
+					return todos, nil
 				},
 			},
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 		},
-		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo) map[string]interface{} {
+		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo, ctx context.Context) (map[string]interface{}, error) {
 			complete, _ := inputMap["complete"].(bool)
 			todoIds := MarkAllTodos(complete)
 			return map[string]interface{}{
 				"todoIds": todoIds,
-			}
+			}, nil
 		},
 	})
 
@@ -223,23 +224,23 @@ func init() {
 		OutputFields: graphql.Fields{
 			"deletedTodoIds": &graphql.Field{
 				Type: graphql.NewList(graphql.String),
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					payload, _ := p.Source.(map[string]interface{})
-					return payload["todoIds"]
+					return payload["todoIds"], nil
 				},
 			},
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 		},
-		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo) map[string]interface{} {
+		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo, ctx context.Context) (map[string]interface{}, error) {
 			todoIds := RemoveCompletedTodos()
 			return map[string]interface{}{
 				"todoIds": todoIds,
-			}
+			}, nil
 		},
 	})
 
@@ -253,25 +254,25 @@ func init() {
 		OutputFields: graphql.Fields{
 			"deletedTodoId": &graphql.Field{
 				Type: graphql.ID,
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					payload, _ := p.Source.(map[string]interface{})
-					return payload["todoId"]
+					return payload["todoId"], nil
 				},
 			},
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 		},
-		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo) map[string]interface{} {
+		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo, ctx context.Context) (map[string]interface{}, error) {
 			id, _ := inputMap["id"].(string)
 			resolvedId := relay.FromGlobalID(id)
 			RemoveTodo(resolvedId.ID)
 			return map[string]interface{}{
 				"todoId": resolvedId.ID,
-			}
+			}, nil
 		},
 	})
 	renameTodoMutation := relay.MutationWithClientMutationID(relay.MutationConfig{
@@ -287,27 +288,27 @@ func init() {
 		OutputFields: graphql.Fields{
 			"todo": &graphql.Field{
 				Type: todoType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					payload, _ := p.Source.(map[string]interface{})
 					todoId, _ := payload["todoId"].(string)
-					return GetTodo(todoId)
+					return GetTodo(todoId), nil
 				},
 			},
 			"viewer": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) interface{} {
-					return GetViewer()
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return GetViewer(), nil
 				},
 			},
 		},
-		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo) map[string]interface{} {
+		MutateAndGetPayload: func(inputMap map[string]interface{}, info graphql.ResolveInfo, ctx context.Context) (map[string]interface{}, error) {
 			id, _ := inputMap["id"].(string)
 			resolvedId := relay.FromGlobalID(id)
 			text, _ := inputMap["text"].(string)
 			RenameTodo(resolvedId.ID, text)
 			return map[string]interface{}{
 				"todoId": resolvedId.ID,
-			}
+			}, nil
 		},
 	})
 	mutationType := graphql.NewObject(graphql.ObjectConfig{
